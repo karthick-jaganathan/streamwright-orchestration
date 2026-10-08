@@ -1,5 +1,5 @@
 """
-What the execution modes share: RunFailed, redacting secret values, adapt's log lines to the logger, the --summary
+What the execution modes share: RunFailed, redacting secret values, streamwright's log lines to the logger, the --summary
 JSON, the secret_env check and the host -> /app path translation of the container modes (docker, k8s).
 """
 
@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path, PurePosixPath
 
-from adapt.orchestration.wrappers import SECRET_ENV_PREFIX
+from streamwright.orchestration.wrappers import SECRET_ENV_PREFIX
 
 LOG_LEVEL = re.compile(r"^\[[^\]]*\]\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\b")
 REDACTED = "***"

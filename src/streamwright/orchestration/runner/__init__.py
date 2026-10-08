@@ -1,20 +1,20 @@
 """
-Runs one node's `adapt run` in one of three execution modes ($ADAPT_EXECUTION, see
-adapt.orchestration.settings.execution_mode):
+Runs one node's `streamwright run` in one of three execution modes ($STREAMWRIGHT_EXECUTION, see
+streamwright.orchestration.settings.execution_mode):
 
 - subprocess (default): the argv as a local subprocess with the secrets added to ITS environment only;
 - docker: the same logical argv in a `docker run --rm` container of the network's image (docker_command): the host
   paths are translated to the container's (/app source folders, /warehouse and /runs mounts) and each secret is passed
-  as `-e ADAPT_SECRET_<NAME>` WITHOUT a value - the value is only in the `docker` process' environment, which docker
+  as `-e STREAMWRIGHT_SECRET_<NAME>` WITHOUT a value - the value is only in the `docker` process' environment, which docker
   copies into the container - so it is never in the argv, the image or the log;
 - k8s: the same logical argv as a Kubernetes Job (one pod) of the network's image (k8s_job_manifest, run_k8s): the
   source is /app/..., the output is the DuckLake warehouse on object storage (a Postgres catalog, data files on S3) and
-  every secret - the source's ADAPT_SECRET_* and the S3/catalog credentials - comes from a Kubernetes Secret through
+  every secret - the source's STREAMWRIGHT_SECRET_* and the S3/catalog credentials - comes from a Kubernetes Secret through
   envFrom: the pipeline sends no secret value at all, only the Secret's name.
 
-Either way adapt's output is streamed line by line to the logger (with any secret value redacted). In subprocess and
-docker modes the --summary JSON adapt always writes (on the host: /runs is a mount) is read into a small result; in k8s
-mode the counts come from adapt's own log lines (the pod's --summary would die with it). A non-zero exit code raises
+Either way streamwright's output is streamed line by line to the logger (with any secret value redacted). In subprocess and
+docker modes the --summary JSON streamwright always writes (on the host: /runs is a mount) is read into a small result; in k8s
+mode the counts come from streamwright's own log lines (the pod's --summary would die with it). A non-zero exit code raises
 RunFailed with the error.
 
 run() is the entry point; the modes' helpers are in common.py, docker.py and k8s.py (all re-exported here).
@@ -26,17 +26,17 @@ import subprocess
 import time
 from pathlib import Path
 
-from adapt.orchestration.runner.common import (CONTAINER_REPO_ROOT, LOG_LEVEL, REDACTED, DockerCommandError,
+from streamwright.orchestration.runner.common import (CONTAINER_REPO_ROOT, LOG_LEVEL, REDACTED, DockerCommandError,
                                                RunFailed, _check_secret_env, _log_line, container_path,
                                                image_value, read_summary, redact, split_duckdb_output)
-from adapt.orchestration.runner.docker import (CONTAINER_RUNS, CONTAINER_WAREHOUSE, DOCKER_HOST_GATEWAY,
+from streamwright.orchestration.runner.docker import (CONTAINER_RUNS, CONTAINER_WAREHOUSE, DOCKER_HOST_GATEWAY,
                                                _remove_container, container_name, container_output, docker_command,
                                                docker_run_command)
-from adapt.orchestration.runner.k8s import (K8S_CONTAINER, K8S_JOB_TTL_S, K8S_LABEL, K8S_POD_FATAL, RUN_END,
+from streamwright.orchestration.runner.k8s import (K8S_CONTAINER, K8S_JOB_TTL_S, K8S_LABEL, K8S_POD_FATAL, RUN_END,
                                             STREAM_WRITTEN, K8sJobError, counts_from_log, delete_k8s_job,
                                             ducklake_output, k8s_catalog_schema, k8s_command, k8s_data_path,
                                             k8s_job_manifest, k8s_job_name, k8s_label_value, k8s_secret_keys, run_k8s)
-from adapt.orchestration.settings import REPO_ROOT
+from streamwright.orchestration.settings import REPO_ROOT
 
 __all__ = ["CONTAINER_REPO_ROOT", "CONTAINER_RUNS", "CONTAINER_WAREHOUSE", "DOCKER_HOST_GATEWAY", "K8S_CONTAINER",
            "K8S_JOB_TTL_S", "K8S_LABEL", "K8S_POD_FATAL", "LOG_LEVEL", "REDACTED", "REPO_ROOT", "RUN_END",
@@ -100,5 +100,5 @@ def run(argv, secret_env, log, summary_path, mode="subprocess", image=None, ware
         result.update(image=image, container=name, docker_command=shlex.join(command))
     if exit_code != 0:
         error = redact(str(summary.get("error") or "no summary was written"), secrets)
-        raise RunFailed("adapt exited with %d: %s" % (exit_code, error), result)
+        raise RunFailed("streamwright exited with %d: %s" % (exit_code, error), result)
     return result

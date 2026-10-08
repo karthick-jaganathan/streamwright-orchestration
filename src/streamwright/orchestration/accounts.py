@@ -4,10 +4,10 @@ credentials. Both come from an external provider - never from source.
 
 Two providers, each read at run time (API first, a local file for development only, else empty):
 
-  accounts   ADAPT_ACCOUNTS_URL (HTTP GET) -> else ADAPT_ACCOUNTS_FILE (default ~/.adapt/accounts.yaml) -> else []
+  accounts   STREAMWRIGHT_ACCOUNTS_URL (HTTP GET) -> else STREAMWRIGHT_ACCOUNTS_FILE (default ~/.streamwright/accounts.yaml) -> else []
              A `clients` map (client -> name, region, accounts[]) or a flat `accounts` list. Each account carries its
              own `token` (the user's OAuth token) - so tokens live on the account, never in `secrets`.
-  secrets    ADAPT_SECRETS_URL  (HTTP GET) -> else ADAPT_SECRETS_FILE  (default ~/.adapt/secrets.yaml)  -> else {}
+  secrets    STREAMWRIGHT_SECRETS_URL  (HTTP GET) -> else STREAMWRIGHT_SECRETS_FILE  (default ~/.streamwright/secrets.yaml)  -> else {}
              A `secrets` map network -> {default, regions} of app-level API credentials (developer_token, client_id,
              client_secret, ...). NO tokens here. `app_config(network, region)` overlays `regions[region]` on `default`.
 
@@ -15,7 +15,7 @@ An account's `region` (from its client) selects which region's secrets a run use
 maps the row's network + region onto `app_config`.
 
 PROTOTYPE: files are the development/testing path. In production both providers are the accounts API (commondb):
-ADAPT_ACCOUNTS_URL / ADAPT_SECRETS_URL return the same documents over HTTP.
+STREAMWRIGHT_ACCOUNTS_URL / STREAMWRIGHT_SECRETS_URL return the same documents over HTTP.
 """
 
 import json
@@ -25,8 +25,8 @@ from pathlib import Path
 import requests
 import yaml
 
-ACCOUNTS_FILE = "~/.adapt/accounts.yaml"
-SECRETS_FILE = "~/.adapt/secrets.yaml"
+ACCOUNTS_FILE = "~/.streamwright/accounts.yaml"
+SECRETS_FILE = "~/.streamwright/secrets.yaml"
 HTTP_TIMEOUT = 15
 
 
@@ -77,7 +77,7 @@ def load_accounts():
     """
     The account rows, from the accounts provider. A `clients` map is flattened to rows (each account keeps its own `token`); a flat `accounts` list is used as-is. No provider configured gives [].
     """
-    document = _load_document("ADAPT_ACCOUNTS_URL", "ADAPT_ACCOUNTS_FILE", ACCOUNTS_FILE)
+    document = _load_document("STREAMWRIGHT_ACCOUNTS_URL", "STREAMWRIGHT_ACCOUNTS_FILE", ACCOUNTS_FILE)
     if not document:
         return []
     if isinstance(document, dict):
@@ -114,7 +114,7 @@ def app_config(network, region=None):
     An absent provider or network gives {}: the wrapper then fails on the first required input that references it,
     naming the input (never a value). NO tokens here - a run's token comes from the account row (row.token).
     """
-    document = _load_document("ADAPT_SECRETS_URL", "ADAPT_SECRETS_FILE", SECRETS_FILE) or {}
+    document = _load_document("STREAMWRIGHT_SECRETS_URL", "STREAMWRIGHT_SECRETS_FILE", SECRETS_FILE) or {}
     secrets = document.get("secrets", document) if isinstance(document, dict) else {}
     entry = secrets.get(network)
     if not isinstance(entry, dict):

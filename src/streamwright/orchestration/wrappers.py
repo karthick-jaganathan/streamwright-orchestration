@@ -1,11 +1,11 @@
 """
-Per-node wrappers: a wrapper turns (node, Context) into the node's `adapt run` argv and the secret environment
+Per-node wrappers: a wrapper turns (node, Context) into the node's `streamwright run` argv and the secret environment
 variables to run it with - `(argv, secret_env)`.
 
 - default_wrapper: reads the source's declared inputs (sourcespec: spec.config + spec.secrets), fills each from the
   network's `inputs` (networks.yaml templates over row/app/ctx) or leaves it to the source's default, and fails on a
   required input with no value. Config inputs become `--set NAME=VALUE`; secret inputs become
-  ADAPT_SECRET_<NAME> entries of secret_env (never argv).
+  STREAMWRIGHT_SECRET_<NAME> entries of secret_env (never argv).
 - @node(name, network=None) registers a custom wrapper for a node (for one network, or any): e.g. one that looks
   something up in a database or reads ctx.upstream, then calls default_wrapper with `overrides`.
 
@@ -14,11 +14,11 @@ The framework calls whatever wrapper is registered for (node, network), else (no
 
 import re
 
-from adapt.orchestration.settings import adapt_bin
-from adapt.orchestration.sourcespec import load_source_spec
+from streamwright.orchestration.settings import streamwright_bin
+from streamwright.orchestration.sourcespec import load_source_spec
 
 SECRET_PREFIX = "secret:"
-SECRET_ENV_PREFIX = "ADAPT_SECRET_"
+SECRET_ENV_PREFIX = "STREAMWRIGHT_SECRET_"
 REFERENCE = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 CTX_FIELDS = ("user_id", "account_id", "network", "timezone", "schema")
 
@@ -142,8 +142,8 @@ def secret_env_name(name):
 
 def default_wrapper(node_name, ctx, overrides=None):
     """
-    `adapt run <source> --stream <stream> --set ... --timezone <tz> --output duckdb:<warehouse>:<schema>
-    --allow-connector ...` and {ADAPT_SECRET_<NAME>: value} for the source's secrets. The node maps to the source's
+    `streamwright run <source> --stream <stream> --set ... --timezone <tz> --output duckdb:<warehouse>:<schema>
+    --allow-connector ...` and {STREAMWRIGHT_SECRET_<NAME>: value} for the source's secrets. The node maps to the source's
     `<stream>` via the network (ctx.stream_of: an alias when the network names it differently).
     """
     spec = load_source_spec(ctx.source)
@@ -152,7 +152,7 @@ def default_wrapper(node_name, ctx, overrides=None):
         raise WrapperError("node %r maps to stream %r, which is not a stream of source %s (streams: %s)" % (
             node_name, stream, spec.name, ", ".join(spec.streams)))
     config, secrets = resolve_inputs(node_name, ctx, overrides)
-    argv = [adapt_bin(), "run", str(ctx.source), "--stream", stream]
+    argv = [streamwright_bin(), "run", str(ctx.source), "--stream", stream]
     for name, value in config.items():
         argv += ["--set", "%s=%s" % (name, value)]
     argv += ["--timezone", ctx.timezone, "--output", "duckdb:%s:%s" % (ctx.warehouse_path, ctx.schema)]

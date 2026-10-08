@@ -9,9 +9,9 @@ import os
 import re
 from pathlib import Path
 
-from adapt.orchestration import accounts as accounts_module
-from adapt.orchestration.settings import warehouse_dir
-from adapt.orchestration.spec import load_networks
+from streamwright.orchestration import accounts as accounts_module
+from streamwright.orchestration.settings import warehouse_dir
+from streamwright.orchestration.spec import load_networks
 
 
 @dataclasses.dataclass
@@ -29,7 +29,7 @@ class Context:
     connectors: tuple = ()
     inputs: dict = dataclasses.field(default_factory=dict)  # networks.yaml `inputs` (templates, no values)
     streams: dict = dataclasses.field(default_factory=dict)  # canonical node -> source stream name (alias), or False
-    image: str = None  # networks.yaml `image` (the container image of ADAPT_EXECUTION=docker)
+    image: str = None  # networks.yaml `image` (the container image of STREAMWRIGHT_EXECUTION=docker)
 
     def stream_of(self, node):
         """The source stream a node maps to on this network (default: the node name itself)."""
@@ -61,7 +61,7 @@ def make_context(user_id, account_id, network, upstream=None, networks=None, acc
         raise KeyError("network %r is not in networks.yaml (known: %s)" % (network, ", ".join(sorted(networks))))
     entry = networks[network]
     row = accounts_module.get_account(user_id, account_id, network, accounts)
-    region = row.get("region") or os.environ.get("ADAPT_REGION")
+    region = row.get("region") or os.environ.get("STREAMWRIGHT_REGION")
     app = (app_loader or accounts_module.app_config)(network, region)
     warehouse = warehouse_for(user_id)
     schema = schema_for(network, account_id)

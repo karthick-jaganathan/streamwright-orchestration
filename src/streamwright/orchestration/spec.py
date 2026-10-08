@@ -1,11 +1,11 @@
 """
 The declarative files: the named pipelines (config/pipelines/<name>.yaml, each a DAG - node order only) and
-config/networks.yaml (a network -> its ADaPT source, how to fill the source's inputs, and the SHARED-VOCABULARY
+config/networks.yaml (a network -> its StreamWright source, how to fill the source's inputs, and the SHARED-VOCABULARY
 `streams:` map that aliases/skips each canonical node per network). All are validated here; none knows anything about a
 particular network. A pipeline is specialised to a network with resolve_pipeline (aliases, skips, edge overrides).
 
-Selecting a pipeline: pipeline_names() lists the *.yaml of $ADAPT_PIPELINE_DIR (default <project dir>/config/pipelines)
-and load_pipeline(name) loads <pipelines dir>/<name>.yaml. $ADAPT_PIPELINE_SPEC (a path to one pipeline file) replaces
+Selecting a pipeline: pipeline_names() lists the *.yaml of $STREAMWRIGHT_PIPELINE_DIR (default <project dir>/config/pipelines)
+and load_pipeline(name) loads <pipelines dir>/<name>.yaml. $STREAMWRIGHT_PIPELINE_SPEC (a path to one pipeline file) replaces
 the folder: that file is then the only pipeline, under its `name:`.
 """
 
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import yaml
 
-from adapt.orchestration.settings import REPO_ROOT, networks_path, pipeline_spec_override, pipelines_dir
-from adapt.orchestration.sourcespec import load_source_spec
+from streamwright.orchestration.settings import REPO_ROOT, networks_path, pipeline_spec_override, pipelines_dir
+from streamwright.orchestration.sourcespec import load_source_spec
 
 NAME = re.compile(r"^[a-z_][a-z0-9_]*$")
 
@@ -59,7 +59,7 @@ class Network:
     inputs: dict  # input name -> template (a string) or literal
     streams: dict  # canonical node -> the source's stream name (a str), or False when the network has no such stream
     after: dict = dataclasses.field(default_factory=dict)  # canonical node -> upstream nodes (per-network edge override)
-    image: str = None  # the container image of ADAPT_EXECUTION=docker ($ADAPT_IMAGE overrides it)
+    image: str = None  # the container image of STREAMWRIGHT_EXECUTION=docker ($STREAMWRIGHT_IMAGE overrides it)
 
     def stream_of(self, node):
         """The source stream a canonical node maps to (default: the node name); False when unsupported, None if unmapped."""
@@ -145,7 +145,7 @@ def load_pipeline_file(path):
 
 def pipeline_files():
     """pipeline name -> its file: the *.yaml of the pipelines folder (a file's `name:` must be its file name), or only
-    $ADAPT_PIPELINE_SPEC when that is set."""
+    $STREAMWRIGHT_PIPELINE_SPEC when that is set."""
     override = pipeline_spec_override()
     if override is not None:
         return {load_pipeline_file(override).name: override}
@@ -169,8 +169,8 @@ def pipeline_names():
 
 def load_pipeline(name=None, path=None):
     """
-    The pipeline `name` (pipelines/<name>.yaml, or the $ADAPT_PIPELINE_SPEC file when its `name:` is `name`), or the
-    pipeline file at `path`. With neither, the only pipeline there is ($ADAPT_PIPELINE_SPEC, or a one-file folder).
+    The pipeline `name` (pipelines/<name>.yaml, or the $STREAMWRIGHT_PIPELINE_SPEC file when its `name:` is `name`), or the
+    pipeline file at `path`. With neither, the only pipeline there is ($STREAMWRIGHT_PIPELINE_SPEC, or a one-file folder).
     """
     if path is not None:
         return load_pipeline_file(path)

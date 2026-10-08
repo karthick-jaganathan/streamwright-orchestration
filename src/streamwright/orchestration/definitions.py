@@ -6,13 +6,13 @@ network's `after` override or the pipeline's default edges. One op per kept node
 into each downstream op as ctx.upstream). Every op takes the same run config {user_id, account_id, network}, builds its
 Context (row, network entry, app-level values loaded at run time), asks the node's wrapper (custom or default) for
 (argv, secret_env) - the argv's `--stream` is the network's resolved stream - and runs it with the runner: a local
-subprocess, with ADAPT_EXECUTION=docker in a `docker run --rm` of the network's image ($ADAPT_IMAGE overrides it), or
-with ADAPT_EXECUTION=k8s as a Kubernetes Job of that image writing to the DuckLake warehouse on object storage (the op
+subprocess, with STREAMWRIGHT_EXECUTION=docker in a `docker run --rm` of the network's image ($STREAMWRIGHT_IMAGE overrides it), or
+with STREAMWRIGHT_EXECUTION=k8s as a Kubernetes Job of that image writing to the DuckLake warehouse on object storage (the op
 waits for the Job, streams its pod's log and fails if the Job fails; the graph's order is the same).
 
 trigger(pipeline, user_id, account_id=None) looks the user's accounts up, resolves the pipeline on each account's
 network (aliases, skips, edge overrides) and executes that network's job once per account row. Every job is in `defs`,
-so `dagster dev -m adapt.orchestration.definitions` shows each pipeline-on-network op graph.
+so `dagster dev -m streamwright.orchestration.definitions` shows each pipeline-on-network op graph.
 """
 
 import argparse
@@ -24,13 +24,13 @@ import sys
 
 from dagster import ConfigMapping, DagsterInstance, Definitions, Failure, In, MetadataValue, Out, job, op
 
-from adapt.orchestration import accounts as accounts_module
-from adapt.orchestration import custom_wrappers  # noqa: F401  (registers the custom node wrappers)
-from adapt.orchestration.context import make_context
-from adapt.orchestration.runner import K8sJobError, RunFailed, container_name, k8s_data_path, k8s_job_name, run
-from adapt.orchestration.settings import REPO_ROOT, adapt_image, execution_mode, k8s_settings, runs_dir
-from adapt.orchestration.spec import (SpecError, load_networks, load_pipeline, load_pipelines, resolve_pipeline)
-from adapt.orchestration.wrappers import wrapper_for
+from streamwright.orchestration import accounts as accounts_module
+from streamwright.orchestration import custom_wrappers  # noqa: F401  (registers the custom node wrappers)
+from streamwright.orchestration.context import make_context
+from streamwright.orchestration.runner import K8sJobError, RunFailed, container_name, k8s_data_path, k8s_job_name, run
+from streamwright.orchestration.settings import REPO_ROOT, streamwright_image, execution_mode, k8s_settings, runs_dir
+from streamwright.orchestration.spec import (SpecError, load_networks, load_pipeline, load_pipelines, resolve_pipeline)
+from streamwright.orchestration.wrappers import wrapper_for
 
 ACCOUNT_CONFIG = {"user_id": str, "account_id": str, "network": str}
 
@@ -44,8 +44,8 @@ def build_op(node_name, spec, network_name):
     ins = {up: In(dict, description="the %s node's result" % up) for up in spec.upstream(node_name)}
 
     @op(name="%s__%s__%s" % (spec.name, network_name, node_name), ins=ins, out=Out(dict),
-        config_schema=ACCOUNT_CONFIG, tags={"kind": "adapt", "pipeline": spec.name, "network": network_name},
-        description="adapt run --stream %s (after: %s)" % (node_name, ", ".join(spec.upstream(node_name)) or "-"))
+        config_schema=ACCOUNT_CONFIG, tags={"kind": "streamwright", "pipeline": spec.name, "network": network_name},
+        description="streamwright run --stream %s (after: %s)" % (node_name, ", ".join(spec.upstream(node_name)) or "-"))
     def node_op(context, **upstream):
         config = context.op_config
         ctx = make_context(config["user_id"], config["account_id"], config["network"], upstream=upstream)
@@ -62,10 +62,10 @@ def build_op(node_name, spec, network_name):
         mode = execution_mode()
         execution = {"mode": mode}
         if mode in ("docker", "k8s"):
-            image = adapt_image(ctx.image)
+            image = streamwright_image(ctx.image)
             if not image:
-                raise Failure(description="node %s: ADAPT_EXECUTION=%s but network %s has no `image:` in "
-                                          "networks.yaml and $ADAPT_IMAGE is not set" % (node_name, mode, ctx.network))
+                raise Failure(description="node %s: STREAMWRIGHT_EXECUTION=%s but network %s has no `image:` in "
+                                          "networks.yaml and $STREAMWRIGHT_IMAGE is not set" % (node_name, mode, ctx.network))
         if mode == "docker":
             execution.update(image=image, warehouse_dir=ctx.warehouse_path.parent, runs_dir=runs_dir(),
                              repo_root=REPO_ROOT,

@@ -1,8 +1,8 @@
 """
-ADAPT_EXECUTION=k8s: a node's logical argv as a Kubernetes Job (one pod) of the network's image (k8s_job_manifest,
+STREAMWRIGHT_EXECUTION=k8s: a node's logical argv as a Kubernetes Job (one pod) of the network's image (k8s_job_manifest,
 run_k8s): the source is /app/..., the output is the DuckLake warehouse on object storage (a Postgres catalog, data files
-on S3) and every secret - the source's ADAPT_SECRET_* and the S3/catalog credentials - comes from a Kubernetes Secret
-through envFrom: the pipeline sends no secret value at all, only the Secret's name. The counts come from adapt's own
+on S3) and every secret - the source's STREAMWRIGHT_SECRET_* and the S3/catalog credentials - comes from a Kubernetes Secret
+through envFrom: the pipeline sends no secret value at all, only the Secret's name. The counts come from streamwright's own
 log lines (the pod's --summary would die with it).
 """
 
@@ -14,17 +14,17 @@ import subprocess
 import time
 import uuid
 
-from adapt.orchestration.runner.common import (CONTAINER_REPO_ROOT, DockerCommandError, RunFailed, _check_secret_env,
+from streamwright.orchestration.runner.common import (CONTAINER_REPO_ROOT, DockerCommandError, RunFailed, _check_secret_env,
                                                _level, _log_line, container_path, image_value, redact,
                                                split_duckdb_output)
-from adapt.orchestration.settings import K8S_REQUIRED_SECRET_KEYS, REPO_ROOT, k8s_settings
+from streamwright.orchestration.settings import K8S_REQUIRED_SECRET_KEYS, REPO_ROOT, k8s_settings
 
-K8S_CONTAINER = "adapt"
-K8S_JOB_TTL_S = 3600         # a Job the runner could not delete (or ADAPT_K8S_KEEP_JOBS kept) goes after an hour
-K8S_LABEL = "adapt-pipeline/"
+K8S_CONTAINER = "streamwright"
+K8S_JOB_TTL_S = 3600         # a Job the runner could not delete (or STREAMWRIGHT_K8S_KEEP_JOBS kept) goes after an hour
+K8S_LABEL = "streamwright-pipeline/"
 K8S_POD_FATAL = {"ErrImageNeverPull", "ErrImagePull", "ImagePullBackOff", "InvalidImageName",
                  "CreateContainerConfigError", "CreateContainerError"}
-# adapt's end-of-stream and end-of-run log lines (adapt.core.runtime.logs): the counts of a k8s run
+# streamwright's end-of-stream and end-of-run log lines (streamwright.core.runtime.logs): the counts of a k8s run
 STREAM_WRITTEN = re.compile(r"\bstream '([^']+)': ([\d,]+) record\(s\) written(?: \(([^)]*)\))?")
 RUN_END = re.compile(r"\brun (finished in|failed after|interrupted after) [\d.]+ s: (\d+) stream\(s\), ([\d,]+) "
                      r"record\(s\) written(?: \(([^)]*)\))?")
@@ -40,8 +40,8 @@ def _identifier(text):
 
 
 def k8s_job_name(*parts):
-    """A unique, DNS-1123 Job name: adapt-<part>-<part>-... (63 chars at most; a long one ends with a hash)."""
-    name = "-".join(["adapt"] + [str(part) for part in parts if part])
+    """A unique, DNS-1123 Job name: streamwright-<part>-<part>-... (63 chars at most; a long one ends with a hash)."""
+    name = "-".join(["streamwright"] + [str(part) for part in parts if part])
     name = re.sub(r"-+", "-", re.sub(r"[^a-z0-9-]", "-", name.lower())).strip("-")
     if len(name) > 63:
         name = "%s-%s" % (name[:54].rstrip("-"), hashlib.sha1(name.encode()).hexdigest()[:8])
@@ -54,7 +54,7 @@ def k8s_label_value(value):
 
 
 def k8s_data_path(user, settings):
-    """Where a user's DuckLake data files go: <data root>/<user>/ (e.g. s3://adapt-warehouse/u1/)."""
+    """Where a user's DuckLake data files go: <data root>/<user>/ (e.g. s3://streamwright-warehouse/u1/)."""
     return "%s/%s/" % (settings["data_root"], _identifier(user))
 
 
@@ -68,7 +68,7 @@ def ducklake_output(value, catalog):
     if value.startswith("ducklake:"):
         return value
     if not value.startswith("duckdb:"):
-        raise K8sJobError("ADAPT_EXECUTION=k8s writes the warehouse to DuckLake: --output %r would stay in the pod"
+        raise K8sJobError("STREAMWRIGHT_EXECUTION=k8s writes the warehouse to DuckLake: --output %r would stay in the pod"
                           % value.partition(":")[0])
     _, schema = split_duckdb_output(value)
     return "ducklake:%s" % catalog if schema is None else "ducklake:%s:%s" % (catalog, schema)
@@ -76,17 +76,17 @@ def ducklake_output(value, catalog):
 
 def k8s_command(argv, catalog, repo_root=REPO_ROOT):
     """
-    The pod's command of a node's logical argv `<adapt> run <source> --flag value ...`: `adapt run /app/<source> ...`,
+    The pod's command of a node's logical argv `<streamwright> run <source> --flag value ...`: `streamwright run /app/<source> ...`,
     with <repo root> paths in --set values as /app/..., --output duckdb:... as the DuckLake output on `catalog` (same
     schema) and no --summary (the pod's file system dies with it). Other flags are passed through unchanged.
     """
     argv = [str(arg) for arg in argv]
     if len(argv) < 3 or argv[1] != "run":
-        raise K8sJobError("expected `<adapt> run <source> ...`, got %r" % argv[:3])
+        raise K8sJobError("expected `<streamwright> run <source> ...`, got %r" % argv[:3])
     if _DSN_PASSWORD.search(catalog):
         raise K8sJobError("the DuckLake catalog DSN may not hold a password (it is in the Secret)")
     try:
-        command = ["adapt", "run", container_path(argv[2], repo_root, CONTAINER_REPO_ROOT)]
+        command = ["streamwright", "run", container_path(argv[2], repo_root, CONTAINER_REPO_ROOT)]
     except DockerCommandError as error:
         raise K8sJobError(str(error))
     rest, index, output = argv[3:], 0, False
@@ -113,22 +113,22 @@ def k8s_job_manifest(command, secret_env, image, name, user, settings, labels=No
     The Job of one node: one pod (backoffLimit 0, restartPolicy Never) of `image` (imagePullPolicy Never: the image is
     loaded onto the nodes) running `command` (k8s_command). Its environment:
 
-    - envFrom the Secret settings["secret"]: the source's ADAPT_SECRET_* and the S3 credentials and catalog password -
+    - envFrom the Secret settings["secret"]: the source's STREAMWRIGHT_SECRET_* and the S3 credentials and catalog password -
       only the Secret's NAME is here; secret_env's values (the local copy) are never put in the manifest;
     - plain values: the user's DuckLake data path and catalog schema, and the S3 endpoint settings.
     """
     _check_secret_env(secret_env)
     if not image:
-        raise K8sJobError("ADAPT_EXECUTION=k8s needs an image: set the network's `image:` in networks.yaml or "
-                          "$ADAPT_IMAGE")
+        raise K8sJobError("STREAMWRIGHT_EXECUTION=k8s needs an image: set the network's `image:` in networks.yaml or "
+                          "$STREAMWRIGHT_IMAGE")
     labels = {**{K8S_LABEL + key: k8s_label_value(value) for key, value in (labels or {}).items()},
-              "app.kubernetes.io/name": "adapt-pipeline", "app.kubernetes.io/component": "node"}
-    env = [{"name": "ADAPT_DUCKLAKE_DATA_PATH", "value": k8s_data_path(user, settings)},
-           {"name": "ADAPT_DUCKLAKE_CATALOG_SCHEMA", "value": k8s_catalog_schema(user)},
-           {"name": "ADAPT_DUCKLAKE_S3_ENDPOINT", "value": settings["s3_endpoint"]},
-           {"name": "ADAPT_DUCKLAKE_S3_URL_STYLE", "value": settings["s3_url_style"]},
-           {"name": "ADAPT_DUCKLAKE_S3_USE_SSL", "value": settings["s3_use_ssl"]},
-           {"name": "ADAPT_DUCKLAKE_S3_REGION", "value": settings["s3_region"]}]
+              "app.kubernetes.io/name": "streamwright-pipeline", "app.kubernetes.io/component": "node"}
+    env = [{"name": "STREAMWRIGHT_DUCKLAKE_DATA_PATH", "value": k8s_data_path(user, settings)},
+           {"name": "STREAMWRIGHT_DUCKLAKE_CATALOG_SCHEMA", "value": k8s_catalog_schema(user)},
+           {"name": "STREAMWRIGHT_DUCKLAKE_S3_ENDPOINT", "value": settings["s3_endpoint"]},
+           {"name": "STREAMWRIGHT_DUCKLAKE_S3_URL_STYLE", "value": settings["s3_url_style"]},
+           {"name": "STREAMWRIGHT_DUCKLAKE_S3_USE_SSL", "value": settings["s3_use_ssl"]},
+           {"name": "STREAMWRIGHT_DUCKLAKE_S3_REGION", "value": settings["s3_region"]}]
     container = {
         "name": K8S_CONTAINER, "image": image, "imagePullPolicy": "Never", "command": list(command),
         "envFrom": [{"secretRef": {"name": settings["secret"]}}], "env": env,
@@ -257,7 +257,7 @@ def _counts(text):
 
 def counts_from_log(lines):
     """
-    (streams, records) from adapt's log lines: each `stream 'S': N record(s) written (export: n, ...)` line, and the
+    (streams, records) from streamwright's log lines: each `stream 'S': N record(s) written (export: n, ...)` line, and the
     `run finished ...: N stream(s), M record(s) written (export: n, ...)` line's per-export counts when it is there.
     """
     streams, records, run_end = [], {}, None
@@ -277,9 +277,9 @@ def run_k8s(argv, secret_env, log, summary_path, image, user, name=None, labels=
             repo_root=None, poll_s=1.0):
     """
     Runs a node's logical argv as a Kubernetes Job (k8s_command, k8s_job_manifest): checks the Secret has every key the
-    pod needs (by name: the source's ADAPT_SECRET_* and the S3/catalog credentials), creates the Job, waits for its pod,
-    streams the pod's log to `log`, waits for the Job to finish, then deletes it (unless ADAPT_K8S_KEEP_JOBS). The
-    counts come from adapt's log lines; a small summary JSON is written to summary_path. RunFailed if the Job failed.
+    pod needs (by name: the source's STREAMWRIGHT_SECRET_* and the S3/catalog credentials), creates the Job, waits for its pod,
+    streams the pod's log to `log`, waits for the Job to finish, then deletes it (unless STREAMWRIGHT_K8S_KEEP_JOBS). The
+    counts come from streamwright's log lines; a small summary JSON is written to summary_path. RunFailed if the Job failed.
     """
     settings = settings or k8s_settings()
     name = name or k8s_job_name(uuid.uuid4().hex[:12])

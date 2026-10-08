@@ -1,6 +1,6 @@
 """
 What a source needs: its source.yaml's declared spec.config and spec.secrets (and its streams/*.yaml), read with
-yaml.safe_load - adapt is never imported. The default wrapper uses this to know which inputs a node must be given.
+yaml.safe_load - streamwright is never imported. The default wrapper uses this to know which inputs a node must be given.
 """
 
 import dataclasses

@@ -6,7 +6,7 @@ campaigns (google_ads): which campaigns to pull for an account comes from a camp
 the default one plus `--set campaign_ids=...` (the google_ads source's `campaigns` stream filters on campaign_ids).
 """
 
-from adapt.orchestration.wrappers import default_wrapper, node
+from streamwright.orchestration.wrappers import default_wrapper, node
 
 # STUB of the campaigns database: account id -> the campaign ids to pull. In production this is a query (commondb).
 # An account that is not here pulls every campaign (no filter).
