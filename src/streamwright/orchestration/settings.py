@@ -1,5 +1,5 @@
 """
-The settings of the orchestration project: its paths (PROJECT_DIR = orchestration/, REPO_ROOT, the config/ files,
+The settings of the orchestration project: its paths (PROJECT_DIR = the repository root, REPO_ROOT, the config/ files,
 warehouse/ and runs/) and the environment variables that override them, the streamwright CLI and the execution mode
 (subprocess, docker or k8s) with its settings. Every value is read from the environment when it is asked for.
 """
@@ -7,8 +7,8 @@ warehouse/ and runs/) and the environment variables that override them, the stre
 import os
 from pathlib import Path
 
-PROJECT_DIR = Path(__file__).resolve().parents[3]  # orchestration/ (this file: orchestration/src/streamwright/orchestration/)
-REPO_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_DIR = Path(__file__).resolve().parents[3]  # the repository root (this file: src/streamwright/orchestration/)
+REPO_ROOT = PROJECT_DIR  # networks.yaml `source:` paths are relative to it (sources/...)
 
 
 def pipelines_dir():
@@ -70,7 +70,7 @@ def docker_bin(environ=None):
 
 
 # STREAMWRIGHT_EXECUTION=k8s: environment variable -> (setting, default). The defaults match the in-cluster simulation of
-# orchestration/k8s/ (setup.sh): LocalStack for S3 and Postgres for the DuckLake catalog, in namespace streamwright.
+# k8s/ (setup.sh): LocalStack for S3 and Postgres for the DuckLake catalog, in namespace streamwright.
 # None of these is a secret: the credentials are in the Kubernetes Secret (`secret`), which each Job pod gets with
 # envFrom - the pipeline never reads or sends them.
 K8S_SETTINGS = {

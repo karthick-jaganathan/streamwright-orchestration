@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 #
-# streamwright-pipeline:local - the streamwright CLI with the AD connectors (google_ads + its gaql query builder, microsoft_ads,
-# meta_ads) and the READER connectors (files, s3, gcs, postgres), so one image can run any network of the
-# pipeline (orchestration/config/networks.yaml `image:`). With STREAMWRIGHT_EXECUTION=docker each pipeline node runs
-#   docker run --rm streamwright-pipeline:local run /app/examples/sources/<source> --stream <node> ...
+# streamwright-pipeline:local - the streamwright CLI with the AD connectors (google_ads + its gaql query builder,
+# microsoft_ads, meta_ads) and the READER connectors (files, s3, gcs, postgres), so one image can run any network of
+# the pipeline (config/networks.yaml `image:`). With STREAMWRIGHT_EXECUTION=docker each pipeline node runs
+#   docker run --rm streamwright-pipeline:local run /app/sources/<source> --stream <node> ...
 #
 # Build from the repository root (the build context; Dockerfile.dockerignore next to this file keeps it small):
-#   bash orchestration/docker/build.sh
-# See orchestration/docker/README.md. The ad SDKs (google-ads, bingads, facebook_business) are heavy: the
-# build takes a few minutes and the image is large.
+#   bash docker/build.sh
+# See docker/README.md. The ad SDKs (google-ads, bingads, facebook_business) are heavy: the build takes a few
+# minutes and the image is large.
 
 FROM python:3.13-slim
 
@@ -18,15 +18,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_ROOT_USER_ACTION=ignore
 
-# The packages are installed from a read-write bind mount of the build context, so their sources (and pip's build
-# leftovers) never become an image layer - only the installed site-packages do.
-RUN --mount=type=bind,target=/build,rw \
-    cd /build \
- && pip install \
-      ./core \
-      ./connectors/ads/google_ads ./connectors/ads/microsoft_ads ./connectors/ads/meta_ads \
-      ./connectors/readers/files ./connectors/readers/s3 ./connectors/readers/gcs ./connectors/readers/postgres \
- && streamwright --help > /dev/null
+# streamwright from PyPI; each connector from the commit its catalog pins (`streamwright connectors install`, which
+# pip-installs from GitHub - so git is installed for the build and removed in the same layer).
+ARG STREAMWRIGHT_VERSION=">=0.1.2,<0.2"
+ARG CONNECTORS="google_ads microsoft_ads meta_ads files s3 gcs postgres"
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git \
+ && pip install "streamwright${STREAMWRIGHT_VERSION}" \
+ && for connector in ${CONNECTORS}; do streamwright connectors install "$connector" --yes || exit 1; done \
+ && streamwright connectors \
+ && apt-get purge -y --auto-remove git \
+ && rm -rf /var/lib/apt/lists/*
 
 # A non-root runtime user. DuckDB's httpfs (s3, gcs), postgres and ducklake extensions (the DuckLake output: data on
 # S3, a Postgres catalog) are installed for it now, so a --rm container or a Kubernetes Job pod never downloads them
@@ -35,9 +37,9 @@ RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin streamwright
 USER streamwright
 RUN python -c "import duckdb; c = duckdb.connect(); [c.install_extension(e) for e in ('httpfs', 'postgres', 'ducklake')]"
 
-# The source folders at their repository-relative paths: <repo>/examples/sources/<x> is /app/examples/sources/<x>.
+# The source folders at their repository-relative paths: <repo>/sources/<x> is /app/sources/<x>.
 WORKDIR /app
-COPY examples/sources /app/examples/sources
+COPY sources /app/sources
 
 # Mount points: the user warehouses (DuckDB files) and the --summary JSON files persist on the host.
 VOLUME ["/warehouse", "/runs"]

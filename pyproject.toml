@@ -7,7 +7,14 @@ name = "streamwright-orchestration"
 version = "0.1.0"
 description = "Spec-driven Dagster orchestration for StreamWright: named declarative DAGs over the streamwright CLI."
 requires-python = ">=3.10"
+license = "Apache-2.0"
+readme = "README.md"
 dependencies = ["dagster", "dagster-webserver", "duckdb", "pyyaml", "requests"]
+
+[project.urls]
+Homepage = "https://github.com/karthick-jaganathan/streamwright-orchestration"
+Repository = "https://github.com/karthick-jaganathan/streamwright-orchestration"
+Documentation = "https://streamwright.web.app/docs/orchestration/"
 
 [tool.dagster]
 module_name = "streamwright.orchestration.definitions"

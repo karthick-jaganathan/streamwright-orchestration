@@ -16,16 +16,16 @@
 # Secret objects to `kubectl apply --server-side -f -` on a pipe (server-side apply keeps no last-applied annotation,
 # so the values are only in the Secrets' data). Idempotent: run it again to refresh the Secret from the file.
 #
-#   bash orchestration/k8s/setup.sh
+#   bash k8s/setup.sh
 #
 # Environment: STREAMWRIGHT_K8S_CONTEXT (kind-streamwright), STREAMWRIGHT_K8S_SECRET (streamwright-secrets), STREAMWRIGHT_SECRETS_FILE
 # (~/.streamwright/secrets.yaml) and STREAMWRIGHT_ACCOUNTS_FILE (~/.streamwright/accounts.yaml) - the providers the Secret is built from -
 # STREAMWRIGHT_K8S_USER (u1, whose google_ads account's token is used), KIND_BIN / KIND_CLUSTER (kind, streamwright: the LocalStack
 # and Postgres images are loaded from the local docker onto the kind node when they are there; SKIP_KIND_LOAD=1 lets
-# the node pull them), PYTHON (a python with PyYAML: orchestration/.venv/bin/python).
+# the node pull them), PYTHON (a python with PyYAML: .venv/bin/python).
 #
 # The pipeline image itself (streamwright-pipeline:local, imagePullPolicy Never) is built and loaded separately:
-#   bash orchestration/docker/build.sh && kind load docker-image streamwright-pipeline:local --name streamwright
+#   bash docker/build.sh && kind load docker-image streamwright-pipeline:local --name streamwright
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

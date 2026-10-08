@@ -1,6 +1,6 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
-# Check it with: streamwright validate examples/sources/ads/meta_ads
-# Run it (pip install streamwright-meta-ads): streamwright run examples/sources/ads/meta_ads --set account_ids=...
+# Check it with: streamwright validate sources/ads/meta_ads
+# Run it (pip install streamwright-meta-ads): streamwright run sources/ads/meta_ads --set account_ids=...
 # Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
 kind: source
 name: meta_ads

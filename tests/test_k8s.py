@@ -75,7 +75,7 @@ class K8sManifestTest(unittest.TestCase):
         self.assertEqual(container["image"], IMAGE)
         self.assertEqual(container["imagePullPolicy"], "Never")
         self.assertEqual(container["command"], command)
-        self.assertEqual(command[:3], ["streamwright", "run", "/app/examples/sources/ads/google_ads"])
+        self.assertEqual(command[:3], ["streamwright", "run", "/app/sources/ads/google_ads"])
         self.assertEqual(pairs(command, "--stream"), ["campaigns"])
         self.assertEqual(pairs(command, "--output"), [DUCKLAKE_OUTPUT])
         self.assertEqual(pairs(command, "--timezone"), ["America/New_York"])
@@ -122,11 +122,11 @@ class K8sManifestTest(unittest.TestCase):
         self.assertEqual(pairs(command, "--output"), ["ducklake:postgres:dbname=c host=h user=u:google_ads_1000000001"])
 
     def test_output_translation(self):
-        logical = ["streamwright", "run", str(REPO_ROOT / "examples/sources/readers/files_demo"),
-                   "--set", "root=%s/examples/sources/readers/files_demo/data" % REPO_ROOT]
+        logical = ["streamwright", "run", str(REPO_ROOT / "sources/readers/files_demo"),
+                   "--set", "root=%s/sources/readers/files_demo/data" % REPO_ROOT]
         command = k8s_command(logical + ["--output", "duckdb:/w/u9.duckdb"], CATALOG)
         self.assertEqual(pairs(command, "--output"), ["ducklake:%s" % CATALOG])
-        self.assertEqual(pairs(command, "--set"), ["root=/app/examples/sources/readers/files_demo/data"])
+        self.assertEqual(pairs(command, "--set"), ["root=/app/sources/readers/files_demo/data"])
         self.assertEqual(pairs(k8s_command(logical, CATALOG), "--output"), ["ducklake:%s" % CATALOG])
         kept = "ducklake:postgres:dbname=x:s"
         self.assertEqual(pairs(k8s_command(logical + ["--output", kept], CATALOG), "--output"), [kept])
@@ -134,7 +134,7 @@ class K8sManifestTest(unittest.TestCase):
     def test_refusals(self):
         with self.assertRaises(K8sJobError):   # no image
             build("campaigns", image=None)
-        source = str(REPO_ROOT / "examples/sources/ads/google_ads")
+        source = str(REPO_ROOT / "sources/ads/google_ads")
         with self.assertRaises(K8sJobError):   # an output that would stay in the pod
             k8s_command(["streamwright", "run", source, "--output", "jsonl:/x"], CATALOG)
         with self.assertRaises(K8sJobError):   # a password in the catalog DSN
@@ -198,7 +198,7 @@ class K8sRunTest(unittest.TestCase):
             return json.load(handle)
 
     def _run(self, extra_env=None, secret_env=None, **kwargs):
-        argv = ["streamwright", "run", str(REPO_ROOT / "examples/sources/ads/google_ads"), "--stream", "campaigns",
+        argv = ["streamwright", "run", str(REPO_ROOT / "sources/ads/google_ads"), "--stream", "campaigns",
                 "--output", "duckdb:%s:google_ads_1" % (SCRATCH / "wh" / "u1.duckdb")]
         secret_env = {"STREAMWRIGHT_SECRET_DEVELOPER_TOKEN": FAKE_APP["developer_token"]} if secret_env is None else secret_env
         log = ListLog()
@@ -215,7 +215,7 @@ class K8sRunTest(unittest.TestCase):
                          ("streamwright-test-campaigns", "streamwright", "streamwright-test-campaigns-abcde"))
         self.assertEqual(result["records"], {"campaigns": 1234})
         self.assertEqual(result["streams"], ["campaigns"])
-        self.assertTrue(result["pod_command"].startswith("streamwright run /app/examples/sources/ads/google_ads --stream campaigns"))
+        self.assertTrue(result["pod_command"].startswith("streamwright run /app/sources/ads/google_ads --stream campaigns"))
         verbs = [call["args"][:2] for call in self.calls()]
         self.assertEqual(verbs[:2], [["get", "secret"], ["create", "-f"]])
         self.assertIn(["logs", "-f"], verbs)
@@ -281,7 +281,7 @@ class K8sRunTest(unittest.TestCase):
             self.assertEqual(out["job"], k8s_job_name("metadata", "u1", "1000000001", name, run_id))
             self.assertEqual(out["records"], {name: 1234})
             command = container_of(self.submitted(out["job"]))["command"]
-            self.assertEqual(command[:5], ["streamwright", "run", "/app/examples/sources/ads/google_ads", "--stream", name])
+            self.assertEqual(command[:5], ["streamwright", "run", "/app/sources/ads/google_ads", "--stream", name])
             self.assertEqual(pairs(command, "--output"), [DUCKLAKE_OUTPUT])
             self.assertEqual(self.submitted(out["job"])["metadata"]["labels"]["streamwright-pipeline/run"],
                              results[0]["run_id"])

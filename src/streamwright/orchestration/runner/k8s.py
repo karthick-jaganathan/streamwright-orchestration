@@ -288,7 +288,7 @@ def run_k8s(argv, secret_env, log, summary_path, image, user, name=None, labels=
     manifest = k8s_job_manifest(command, secret_env, image, name, user, settings, labels)
     missing = sorted((set(secret_env) | set(K8S_REQUIRED_SECRET_KEYS)) - k8s_secret_keys(settings))
     if missing:
-        raise K8sJobError("Secret %s/%s has no %s (orchestration/k8s/setup.sh creates it)" % (
+        raise K8sJobError("Secret %s/%s has no %s (k8s/setup.sh creates it)" % (
             settings["namespace"], settings["secret"], ", ".join(missing)))
     where = "%s/%s" % (settings["namespace"], name)
     log.info("k8s: Job %s (context %s, image %s, envFrom Secret %s): $ %s" % (

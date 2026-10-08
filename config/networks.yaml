@@ -5,7 +5,7 @@
 #   timezone:    the default `streamwright run --timezone` (an account row's `timezone` overrides it)
 #   connectors:  the connectors the run may load (`--allow-connector`, so nothing else installed can be loaded)
 #   image:       (optional) the container image a node's `streamwright run` runs in when STREAMWRIGHT_EXECUTION=docker or k8s; it must
-#                have the network's connectors (streamwright-pipeline:local: orchestration/docker/build.sh).
+#                have the network's connectors (streamwright-pipeline:local: docker/build.sh).
 #                $STREAMWRIGHT_IMAGE overrides it for every network. Ignored in the default subprocess mode.
 #   inputs:      one value per declared input, a small template over
 #                  {{ row.NAME }}  the account's lookup row (streamwright/orchestration/accounts.py; a DB later)
@@ -27,7 +27,7 @@
 # NO SECRET VALUES HERE: only references to where they come from.
 networks:
   google_ads:
-    source: examples/sources/ads/google_ads
+    source: sources/ads/google_ads
     timezone: America/New_York
     connectors: [google_ads, gaql]          # the SDK connector and its GAQL query builder
     image: streamwright-pipeline:local             # STREAMWRIGHT_EXECUTION=docker: streamwright + the ad connectors (pipeline/docker/)
@@ -49,7 +49,7 @@ networks:
       campaign_performance: campaign_performance
 
   microsoft_ads:
-    source: examples/sources/ads/microsoft_ads
+    source: sources/ads/microsoft_ads
     timezone: America/New_York
     connectors: [microsoft_ads]
     image: streamwright-pipeline:local
@@ -71,7 +71,7 @@ networks:
       campaign_performance: campaign_performance
 
   meta_ads:
-    source: examples/sources/ads/meta_ads
+    source: sources/ads/meta_ads
     timezone: America/New_York
     connectors: [meta_ads]
     image: streamwright-pipeline:local

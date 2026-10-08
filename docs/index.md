@@ -1,11 +1,3 @@
----
-layout: default
-title: Orchestration
-nav_order: 7
-has_children: true
-permalink: /orchestration/
----
-
 # streamwright.orchestration — running the streamwright CLI as Dagster pipelines
 
 Named declarative DAGs (**pipelines**) run the `streamwright` CLI per **user** and **network**, as Dagster op graphs.
@@ -13,30 +5,27 @@ Named declarative DAGs (**pipelines**) run the `streamwright` CLI per **user** a
 - **Network-agnostic:** Google Ads is just one entry in `config/networks.yaml`.
 - **Never imports streamwright:** every node shells out to the streamwright CLI (`$STREAMWRIGHT_BIN`, default
   `/tmp/streamwright-sdk-venv/bin/streamwright`).
-- **Package:** `streamwright.orchestration` (distribution `streamwright-orchestration`), in the
-  [`orchestration/`](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration) folder of the
-  repository.
+- **Package:** `streamwright.orchestration` (distribution `streamwright-orchestration`), this repository.
 - **Status:** a **prototype**.
 
-{: .note }
-**Prototype stubs:** `config/networks.yaml` (the network registry) and `src/streamwright/orchestration/accounts.py` (the
-account + secrets providers) are stand-ins; in production both come from a database / registry service (API).
+> **Prototype stubs:** `config/networks.yaml` (the network registry) and `src/streamwright/orchestration/accounts.py` (the
+> account + secrets providers) are stand-ins; in production both come from a database / registry service (API).
 
 | Page | What it covers |
 |---|---|
-| [Architecture]({{ site.baseurl }}/orchestration/architecture/) | the pipeline/network model, the shared vocabulary, wrappers, op graphs and the trigger, the execution-mode mechanics and how secrets flow |
-| [Running]({{ site.baseurl }}/orchestration/running/) | installing and testing the package, triggering pipelines, seeing CLI runs in the Dagster UI, the execution modes (`subprocess`, `docker`, `k8s`) and the environment variables |
+| [Architecture](architecture.md) | the pipeline/network model, the shared vocabulary, wrappers, op graphs and the trigger, the execution-mode mechanics and how secrets flow |
+| [Running](running.md) | installing and testing the package, triggering pipelines, seeing CLI runs in the Dagster UI, the execution modes (`subprocess`, `docker`, `k8s`) and the environment variables |
 
 For how orchestration fits the whole StreamWright system (with sequence diagrams), see the
-[Architecture guide]({{ site.baseurl }}/architecture/). Every node runs [streamwright]({{ site.baseurl }}/core/)'s
+[Architecture guide](https://streamwright.web.app/docs/architecture/). Every node runs [streamwright](https://streamwright.web.app/docs/)'s
 `streamwright run`.
 
 ## In one minute
 
 - **Pipelines** (`config/pipelines/<name>.yaml`) — a named DAG of **canonical** node names and their `after` edges.
-- **Networks** (`config/networks.yaml`) — map each network to an StreamWright source, with:
+- **Networks** (`config/networks.yaml`) — map each network to a StreamWright source, with:
   - its `inputs`, `connectors` and container `image`;
-  - a `streams:` map (the [*shared vocabulary*]({{ site.baseurl }}/orchestration/architecture/#shared-vocabulary-one-pipeline-across-networks-that-name-streams-differently)):
+  - a `streams:` map (the [*shared vocabulary*](architecture.md#shared-vocabulary-one-pipeline-across-networks-that-name-streams-differently)):
     alias or `false`-skip each canonical node.
 
   So one pipeline runs across many networks that name (or lack) streams differently.
@@ -44,12 +33,12 @@ For how orchestration fits the whole StreamWright system (with sequence diagrams
   out over, each carrying its own `token`) and the secrets provider (per-network app credentials, by region).
 - **Wrappers** — turn a node into its `streamwright run` command, derived from the source's declared `spec`.
 - **Execution** — each node runs as a local subprocess (default), a `docker run`, or a Kubernetes Job
-  (`STREAMWRIGHT_EXECUTION`; see [Execution modes]({{ site.baseurl }}/orchestration/running/#execution-modes)).
+  (`STREAMWRIGHT_EXECUTION`; see [Execution modes](running.md#execution-modes)).
 
 - Each `(pipeline, network)` is its own Dagster job `ads_<pipeline>__<network>`.
 - `trigger(pipeline, user)` runs it for each of the user's accounts.
 
-See [Architecture]({{ site.baseurl }}/orchestration/architecture/) for the full model.
+See [Architecture](architecture.md) for the full model.
 
 ## Security in short
 
@@ -59,13 +48,14 @@ Secrets never travel as data.
 - They are passed to `streamwright` only as `STREAMWRIGHT_SECRET_*` environment variables (via a Kubernetes `Secret` in k8s mode).
 - They are never on the command line, in the image, in the run config, or in a log.
 
-See [Security: secrets]({{ site.baseurl }}/orchestration/architecture/#security-secrets) for the details.
+See [Security: secrets](architecture.md#security-secrets) for the details.
 
 ## Layout
 
 ```
-orchestration/
+streamwright-orchestration/
   README.md                a short pointer to these pages
+  docs/                    these pages
   pyproject.toml           the streamwright-orchestration package (src layout) + [tool.dagster] module_name
   requirements.txt         dagster, dagster-webserver, duckdb, pyyaml
   config/
@@ -74,15 +64,14 @@ orchestration/
   demo.py                  live end-to-end demo
   docker/                  the streamwright-pipeline:local image for STREAMWRIGHT_EXECUTION=docker/k8s
   k8s/                     STREAMWRIGHT_EXECUTION=k8s: setup.sh + in-cluster S3 (LocalStack) + DuckLake catalog (Postgres)
-  localstack/              a LocalStack S3 helper (docker compose) for trying the s3 reader locally
   src/streamwright/orchestration/ spec.py, sourcespec.py, accounts.py, context.py, wrappers.py, custom_wrappers.py,
                            runner/ (subprocess/docker/k8s), definitions.py (the Dagster jobs + trigger), settings.py
   tests/                   unittest suite (a stand-in streamwright CLI for the graph/runner tests)
 ```
 
-On GitHub: [config/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/config),
-[src/streamwright/orchestration/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/src/streamwright/orchestration),
-[docker/](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/docker/README.md),
-[k8s/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/k8s),
-[localstack/](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/localstack/README.md) and
-[tests/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/tests).
+On GitHub: [config/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/config),
+[src/streamwright/orchestration/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/src/streamwright/orchestration),
+[docker/](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docker/README.md),
+[k8s/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/k8s),
+[sources/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/sources) and
+[tests/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/tests).

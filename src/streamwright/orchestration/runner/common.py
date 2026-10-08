@@ -12,7 +12,7 @@ from streamwright.orchestration.wrappers import SECRET_ENV_PREFIX
 LOG_LEVEL = re.compile(r"^\[[^\]]*\]\s+(DEBUG|INFO|WARNING|ERROR|CRITICAL)\b")
 REDACTED = "***"
 
-CONTAINER_REPO_ROOT = PurePosixPath("/app")      # the image ships <repo>/examples/sources at /app/examples/sources
+CONTAINER_REPO_ROOT = PurePosixPath("/app")      # the image ships <repo>/sources at /app/sources
 
 
 class RunFailed(RuntimeError):

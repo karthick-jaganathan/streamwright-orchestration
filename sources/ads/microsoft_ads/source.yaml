@@ -1,6 +1,6 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
-# Check it with: streamwright validate examples/sources/ads/microsoft_ads
-# Run it (pip install streamwright-microsoft-ads): streamwright run examples/sources/ads/microsoft_ads \
+# Check it with: streamwright validate sources/ads/microsoft_ads
+# Run it (pip install streamwright-microsoft-ads): streamwright run sources/ads/microsoft_ads \
 #   --set account_ids=... --set customer_id=...
 # Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
 kind: source

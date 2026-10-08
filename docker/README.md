@@ -4,31 +4,33 @@ With `STREAMWRIGHT_EXECUTION=docker`, every pipeline node's `streamwright run` e
 network's image instead of the local streamwright CLI. This folder builds that image.
 
 ```
-orchestration/docker/
+docker/
 ├── Dockerfile                 # streamwright-pipeline:local - streamwright + the ad connectors + the reader connectors
 ├── Dockerfile.dockerignore    # the build context allow-list (Docker reads <Dockerfile>.dockerignore, not ./.dockerignore)
-└── build.sh                   # docker build -t streamwright-pipeline:local -f orchestration/docker/Dockerfile .
+└── build.sh                   # docker build -t streamwright-pipeline:local -f docker/Dockerfile .
 ```
 
 ## The image
 
-`python:3.13-slim` + `streamwright` (the `streamwright` CLI) + the **ad connectors** (`connectors/ads/google_ads` with its
-`gaql` query builder, `microsoft_ads`, `meta_ads`) + the **reader connectors** (`connectors/readers/files`, `s3`,
-`gcs`, `postgres`), so one image runs any network in `config/networks.yaml`. The ad SDKs (google-ads, bingads,
+`python:3.13-slim` + `streamwright` from PyPI (the `streamwright` CLI) + the **ad connectors** (`google_ads` with its
+`gaql` query builder, `microsoft_ads`, `meta_ads`) + the **reader connectors** (`files`, `s3`, `gcs`, `postgres`),
+so one image runs any network in `config/networks.yaml`. The ad SDKs (google-ads, bingads,
 facebook_business) are heavy: the build takes a few minutes and the image is ~480 MB.
 
-- Installed from a bind mount of the build context (`--mount=type=bind,target=/build,rw`): package sources never become
-  a layer. The context is the repository root filtered by `Dockerfile.dockerignore` (an allow-list: `streamwright`, the
-  connectors above, `examples/sources`; ~1.5 MB — never `.git`, `.venv`, `warehouse/`, `runs/` or secrets files).
-- `examples/sources` is copied to `/app/examples/sources` (`WORKDIR /app`): the repository path
-  `<repo>/examples/sources/ads/google_ads` is `/app/examples/sources/ads/google_ads` in the container. Changing a source folder
+- Each connector is installed with `streamwright connectors install <key>`, from the commit the streamwright catalog
+  pins (git is present only during that layer). Build arguments: `STREAMWRIGHT_VERSION` (default `>=0.1.2,<0.2`) and
+  `CONNECTORS` (the connector keys).
+- The context is the repository root filtered by `Dockerfile.dockerignore` (an allow-list: `sources` only — never
+  `.git`, `.venv`, `warehouse/`, `runs/` or secrets files).
+- `sources` is copied to `/app/sources` (`WORKDIR /app`): the repository path
+  `<repo>/sources/ads/google_ads` is `/app/sources/ads/google_ads` in the container. Changing a source folder
   means rebuilding the image.
 - Runs as the non-root user `streamwright` (uid 1000); DuckDB's `httpfs`/`postgres`/`ducklake` extensions are pre-installed for it.
 - `ENTRYPOINT ["streamwright"]`, `VOLUME ["/warehouse", "/runs"]`.
 - **No secrets** are in the image: credentials arrive at run time as environment variables.
 
 ```bash
-bash orchestration/docker/build.sh                        # from anywhere; extra args go to docker build
+bash docker/build.sh                        # from anywhere; extra args go to docker build
 docker run --rm streamwright-pipeline:local connectors           # google_ads, microsoft_ads, meta_ads, files, s3, gcs, postgres
 ```
 
@@ -55,7 +57,7 @@ docker run --rm --init --pull never --name streamwright-pipe-u1-1000000001-campa
   --add-host host.docker.internal:host-gateway \
   -v <orchestration>/warehouse:/warehouse -v <orchestration>/runs:/runs \
   -e STREAMWRIGHT_SECRET_CLIENT_ID -e STREAMWRIGHT_SECRET_CLIENT_SECRET -e STREAMWRIGHT_SECRET_DEVELOPER_TOKEN -e STREAMWRIGHT_SECRET_REFRESH_TOKEN \
-  streamwright-pipeline:local run /app/examples/sources/ads/google_ads --stream campaigns \
+  streamwright-pipeline:local run /app/sources/ads/google_ads --stream campaigns \
   --set customer_ids=1000000001 --set login_customer_id=2000000002 --set start_date=-7d \
   --timezone America/Los_Angeles --output duckdb:/warehouse/u1.duckdb:google_ads_1000000001 \
   --allow-connector google_ads --allow-connector gaql --summary /runs/<run id>/campaigns.summary.json

@@ -1,24 +1,15 @@
----
-layout: default
-title: Running
-parent: Orchestration
-nav_order: 3
-permalink: /orchestration/running/
----
-
 # Running the pipelines
 
 How to install and test `streamwright-orchestration`, trigger pipelines, see the runs in the Dagster UI, and choose where each
-node runs. The model behind these commands is in [Architecture]({{ site.baseurl }}/orchestration/architecture/).
+node runs. The model behind these commands is in [Architecture](architecture.md).
 
 ## Running
 
-Work from the [`orchestration/`](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration) folder,
-in its own venv:
+Work from the root of this repository, in its own venv:
 
 - The package is installed editable.
 - streamwright is NOT needed in it: every node runs the streamwright CLI of `$STREAMWRIGHT_BIN` (see
-  [streamwright]({{ site.baseurl }}/core/)).
+  [streamwright](https://streamwright.web.app/docs/)).
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -e .                # once: streamwright-orchestration + dagster, duckdb, pyyaml
@@ -54,7 +45,7 @@ $PY -m streamwright.orchestration.definitions metadata u1                  # ter
 ## Execution modes
 
 `STREAMWRIGHT_EXECUTION` selects where each node's `streamwright run` executes. The op graph and run config are identical across
-modes (mechanics in [Architecture]({{ site.baseurl }}/orchestration/architecture/#execution-modes-mechanics)).
+modes (mechanics in [Architecture](architecture.md#execution-modes-mechanics)).
 
 | mode | where a node runs | warehouse |
 |---|---|---|
@@ -76,12 +67,10 @@ kubectl --context kind-streamwright -n streamwright exec deploy/localstack -- aw
 
 The images and manifests live next to the code, on GitHub:
 
-- [orchestration/docker/README.md](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/docker/README.md)
+- [docker/README.md](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docker/README.md)
   — the `streamwright-pipeline:local` image for `STREAMWRIGHT_EXECUTION=docker` and `k8s`.
-- [orchestration/k8s/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/k8s) — `setup.sh`,
+- [k8s/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/k8s) — `setup.sh`,
   the in-cluster S3 (LocalStack) and the DuckLake catalog (Postgres).
-- [orchestration/localstack/README.md](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/localstack/README.md)
-  — a LocalStack S3 helper (docker compose) for trying the s3 reader locally.
 
 ## Environment
 
@@ -102,7 +91,7 @@ The images and manifests live next to the code, on GitHub:
 
 **Execution mode:** `STREAMWRIGHT_EXECUTION`, `STREAMWRIGHT_IMAGE`, `STREAMWRIGHT_DOCKER_ARGS`, `STREAMWRIGHT_DOCKER_BIN`, `STREAMWRIGHT_K8S_*`,
 `STREAMWRIGHT_KUBECTL_BIN` (see
-[Execution modes: mechanics]({{ site.baseurl }}/orchestration/architecture/#execution-modes-mechanics)).
+[Execution modes: mechanics](architecture.md#execution-modes-mechanics)).
 
 Secrets reach `streamwright` only as `STREAMWRIGHT_SECRET_*` environment variables (via a Kubernetes `Secret` in k8s mode); see
-[Security: secrets]({{ site.baseurl }}/orchestration/architecture/#security-secrets).
+[Security: secrets](architecture.md#security-secrets).

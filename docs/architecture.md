@@ -1,16 +1,8 @@
----
-layout: default
-title: Architecture
-parent: Orchestration
-nav_order: 2
-permalink: /orchestration/architecture/
----
-
 # streamwright.orchestration — architecture & design
 
 How the orchestration subsystem works in depth. For how it fits the whole StreamWright system (with sequence diagrams) see
-the [Architecture guide]({{ site.baseurl }}/architecture/); for day-to-day commands see
-[Running]({{ site.baseurl }}/orchestration/running/).
+the [Architecture guide](https://streamwright.web.app/docs/architecture/); for day-to-day commands see
+[Running](running.md).
 
 - **Network-agnostic:** Google Ads is just one entry in `config/networks.yaml`.
 - **Never imports streamwright:** every node shells out to the `streamwright` CLI (`$STREAMWRIGHT_BIN`).
@@ -124,9 +116,9 @@ Each input is a literal, or a small template over:
 
 | Reference | Value |
 |---|---|
-| {% raw %}`{{ row.NAME }}`{% endraw %} | the account row |
-| {% raw %}`{{ app.NAME }}`{% endraw %} | app-level values/secrets |
-| {% raw %}`{{ ctx.NAME }}`{% endraw %} | user_id, account_id, network, timezone, schema |
+| `{{ row.NAME }}` | the account row |
+| `{{ app.NAME }}` | app-level values/secrets |
+| `{{ ctx.NAME }}` | user_id, account_id, network, timezone, schema |
 
 A reference that is not set leaves the input unset (e.g. `login_customer_id` for an account without a manager).
 
@@ -174,7 +166,7 @@ Two providers, read at run time (the API first, a local file for development onl
   (default `~/.streamwright/secrets.yaml`): a `secrets` map `network → {default, regions}` of app-level API credentials
   (`developer_token`, `client_id`, `client_secret`, …). The account's `region` selects which `regions[region]` values
   overlay `default`. **No tokens here.**
-- The per-user OAuth token rides on the account row ({% raw %}`refresh_token: "secret:{{ row.token }}"`{% endraw %}) —
+- The per-user OAuth token rides on the account row (`refresh_token: "secret:{{ row.token }}"`) —
   never in the secrets provider.
 
 ### Op graphs + trigger
@@ -218,13 +210,13 @@ The local streamwright CLI `$STREAMWRIGHT_BIN`, writing a DuckDB file under `war
 A `docker run --rm` container of the network's `image:` (`$STREAMWRIGHT_IMAGE` overrides it).
 
 - The wrapper builds the same logical argv. The runner translates it:
-  - source → `/app/examples/sources/...`;
+  - source → `/app/sources/...`;
   - `--output duckdb:/warehouse/...`;
   - `--summary /runs/...`;
   - with the warehouse and runs folders mounted.
 - Each secret is passed as `-e STREAMWRIGHT_SECRET_<NAME>` **without a value**.
 
-See [docker/README.md](https://github.com/karthick-jaganathan/streamwright/blob/master/orchestration/docker/README.md).
+See [docker/README.md](https://github.com/karthick-jaganathan/streamwright-orchestration/blob/main/docker/README.md).
 
 ### `k8s`
 
@@ -233,7 +225,7 @@ A Kubernetes Job per node, created with `kubectl`.
 - The Job: one pod, `backoffLimit: 0`, `restartPolicy: Never`, `imagePullPolicy: Never`.
 - Context `$STREAMWRIGHT_K8S_CONTEXT` (default `kind-streamwright`); namespace `$STREAMWRIGHT_K8S_NAMESPACE` (default `streamwright`).
 - The pod runs
-  `streamwright run /app/examples/sources/<source> --stream <stream> ... --output "ducklake:postgres:dbname=streamwrightcat host=catalog-postgres.streamwright.svc.cluster.local port=5432 user=streamwright:<network>_<account>"`.
+  `streamwright run /app/sources/<source> --stream <stream> ... --output "ducklake:postgres:dbname=streamwrightcat host=catalog-postgres.streamwright.svc.cluster.local port=5432 user=streamwright:<network>_<account>"`.
 - The warehouse is a **DuckLake**: Parquet data on S3 under `s3://streamwright-warehouse/<user>/`, the catalog in Postgres
   (schema `lake_<user>`).
 
@@ -248,7 +240,7 @@ The op:
 7. deletes the Job, and fails the op if the Job failed.
 
 A downstream node's Job is created only after its upstream Jobs completed (the op graph is unchanged). See
-[k8s/](https://github.com/karthick-jaganathan/streamwright/tree/master/orchestration/k8s).
+[k8s/](https://github.com/karthick-jaganathan/streamwright-orchestration/tree/main/k8s).
 
 Settings (`streamwright.orchestration.K8S_SETTINGS`):
 
@@ -273,7 +265,7 @@ variables.
 ### Nothing stored
 
 - No secret value is in `config/networks.yaml`, `config/pipelines/*.yaml`, code or run config.
-- `inputs` only reference where a value comes from ({% raw %}`secret:{{ app.developer_token }}`{% endraw %}).
+- `inputs` only reference where a value comes from (`secret:{{ app.developer_token }}`).
 - The run config is `{user_id, account_id, network}` only.
 - A `secret:` value for a config input is rejected (it would end up on the command line).
 

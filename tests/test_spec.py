@@ -129,7 +129,7 @@ class NetworksTest(unittest.TestCase):
     def test_loads_google_ads(self):
         networks = load_networks()
         google = networks["google_ads"]
-        self.assertEqual(google.source, (REPO_ROOT / "examples/sources/ads/google_ads").resolve())
+        self.assertEqual(google.source, (REPO_ROOT / "sources/ads/google_ads").resolve())
         self.assertEqual(google.timezone, "America/New_York")
         self.assertEqual(google.connectors, ("google_ads", "gaql"))
         self.assertEqual(google.inputs["customer_ids"], "{{ row.account_id }}")
@@ -138,24 +138,24 @@ class NetworksTest(unittest.TestCase):
 
     def test_streams_map_is_required_and_validated(self):
         with self.assertRaisesRegex(SpecError, "`streams`"):
-            parse_networks({"networks": {"n": {"source": "examples/sources/ads/google_ads"}}})
+            parse_networks({"networks": {"n": {"source": "sources/ads/google_ads"}}})
         with self.assertRaisesRegex(SpecError, "is not a stream of source"):
-            parse_networks({"networks": {"n": {"source": "examples/sources/ads/google_ads",
+            parse_networks({"networks": {"n": {"source": "sources/ads/google_ads",
                                                "streams": {"campaigns": "nope"}}}})
         with self.assertRaisesRegex(SpecError, "`after` node 'x' is not in `streams`"):
-            parse_networks({"networks": {"n": {"source": "examples/sources/ads/google_ads",
+            parse_networks({"networks": {"n": {"source": "sources/ads/google_ads",
                                                "streams": {"campaigns": "campaigns"}, "after": {"x": []}}}})
 
     def test_missing_source_raises(self):
         with self.assertRaisesRegex(SpecError, "no source.yaml"):
             parse_networks({"networks": {"n": {"source": "does/not/exist"}}})
         with self.assertRaisesRegex(SpecError, "unknown keys"):
-            parse_networks({"networks": {"n": {"source": "examples/sources/ads/google_ads", "bogus": 1}}})
+            parse_networks({"networks": {"n": {"source": "sources/ads/google_ads", "bogus": 1}}})
 
 
 class SourceSpecTest(unittest.TestCase):
     def test_google_ads_declared_inputs(self):
-        spec = load_source_spec(REPO_ROOT / "examples/sources/ads/google_ads")
+        spec = load_source_spec(REPO_ROOT / "sources/ads/google_ads")
         self.assertEqual(set(spec.config_keys),
                          {"customer_ids", "login_customer_id", "start_date", "campaign_ids", "channel_types"})
         self.assertEqual(set(spec.secret_keys), {"developer_token", "client_id", "client_secret", "refresh_token"})

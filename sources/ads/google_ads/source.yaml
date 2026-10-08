@@ -1,6 +1,6 @@
 # Example source folder (see docs/design/source-format.md): this file, and one file per stream in streams/.
-# Check it with: streamwright validate examples/sources/ads/google_ads
-# Run it (pip install streamwright-google-ads): streamwright run examples/sources/ads/google_ads --set customer_ids=...
+# Check it with: streamwright validate sources/ads/google_ads
+# Run it (pip install streamwright-google-ads): streamwright run sources/ads/google_ads --set customer_ids=...
 # Secrets come from STREAMWRIGHT_SECRET_<NAME> environment variables or --secrets FILE.
 kind: source
 name: google_ads
