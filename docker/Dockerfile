@@ -18,14 +18,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_ROOT_USER_ACTION=ignore
 
-# streamwright from PyPI; each connector from the commit its catalog pins (`streamwright connectors install`, which
-# pip-installs from GitHub - so git is installed for the build and removed in the same layer).
-ARG STREAMWRIGHT_VERSION=">=0.1.2,<0.2"
+# streamwright from PyPI; the connectors from the commits its catalog pins, in one `streamwright connectors install`
+# (one pip install from GitHub - so git is installed for the build and removed in the same layer).
+ARG STREAMWRIGHT_VERSION=">=0.1.4,<0.2"
 ARG CONNECTORS="google_ads microsoft_ads meta_ads files s3 gcs postgres"
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && pip install "streamwright${STREAMWRIGHT_VERSION}" \
- && for connector in ${CONNECTORS}; do streamwright connectors install "$connector" --yes || exit 1; done \
+ && streamwright connectors install ${CONNECTORS} --yes \
  && streamwright connectors \
  && apt-get purge -y --auto-remove git \
  && rm -rf /var/lib/apt/lists/*

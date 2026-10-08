@@ -17,8 +17,8 @@ docker/
 so one image runs any network in `config/networks.yaml`. The ad SDKs (google-ads, bingads,
 facebook_business) are heavy: the build takes a few minutes and the image is ~480 MB.
 
-- Each connector is installed with `streamwright connectors install <key>`, from the commit the streamwright catalog
-  pins (git is present only during that layer). Build arguments: `STREAMWRIGHT_VERSION` (default `>=0.1.2,<0.2`) and
+- The connectors are installed with one `streamwright connectors install <key> <key> ...`, from the commits the
+  streamwright catalog pins (git is present only during that layer). Build arguments: `STREAMWRIGHT_VERSION` (default `>=0.1.4,<0.2`) and
   `CONNECTORS` (the connector keys).
 - The context is the repository root filtered by `Dockerfile.dockerignore` (an allow-list: `sources` only — never
   `.git`, `.venv`, `warehouse/`, `runs/` or secrets files).

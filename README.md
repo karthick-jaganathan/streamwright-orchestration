@@ -26,7 +26,7 @@ To run real pipelines, point `STREAMWRIGHT_BIN` at a `streamwright` CLI that has
 ```sh
 python3 -m venv /tmp/streamwright-sdk-venv
 /tmp/streamwright-sdk-venv/bin/pip install streamwright
-/tmp/streamwright-sdk-venv/bin/streamwright connectors install google_ads     # also microsoft_ads, meta_ads
+/tmp/streamwright-sdk-venv/bin/streamwright connectors install google_ads microsoft_ads meta_ads
 export STREAMWRIGHT_BIN=/tmp/streamwright-sdk-venv/bin/streamwright
 ```
 
