@@ -9,7 +9,7 @@ Work from the root of this repository, in its own venv:
 
 - The package is installed editable.
 - streamwright is NOT needed in it: every node runs the streamwright CLI of `$STREAMWRIGHT_BIN` (see
-  [streamwright](https://streamwright.web.app/docs/)).
+  [streamwright](https://streamwright.net/docs/)).
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -e .                # once: streamwright-orchestration + dagster, duckdb, pyyaml

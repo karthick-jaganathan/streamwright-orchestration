@@ -14,7 +14,7 @@ dependencies = ["dagster", "dagster-webserver", "duckdb", "pyyaml", "requests"]
 [project.urls]
 Homepage = "https://github.com/karthick-jaganathan/streamwright-orchestration"
 Repository = "https://github.com/karthick-jaganathan/streamwright-orchestration"
-Documentation = "https://streamwright.web.app/docs/orchestration/"
+Documentation = "https://streamwright.net/docs/orchestration/"
 
 [tool.dagster]
 module_name = "streamwright.orchestration.definitions"

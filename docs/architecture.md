@@ -1,7 +1,7 @@
 # streamwright.orchestration — architecture & design
 
 How the orchestration subsystem works in depth. For how it fits the whole StreamWright system (with sequence diagrams) see
-the [Architecture guide](https://streamwright.web.app/docs/architecture/); for day-to-day commands see
+the [Architecture guide](https://streamwright.net/docs/architecture/); for day-to-day commands see
 [Running](running.md).
 
 - **Network-agnostic:** Google Ads is just one entry in `config/networks.yaml`.
