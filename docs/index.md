@@ -17,7 +17,7 @@ Named declarative DAGs (**pipelines**) run the `streamwright` CLI per **user** a
 | [Running](running.md) | installing and testing the package, triggering pipelines, seeing CLI runs in the Dagster UI, the execution modes (`subprocess`, `docker`, `k8s`) and the environment variables |
 
 For how orchestration fits the whole StreamWright system (with sequence diagrams), see the
-[Architecture guide](https://streamwright.net/docs/architecture/). Every node runs [streamwright](https://streamwright.net/docs/)'s
+[Architecture guide](https://docs.streamwright.net/architecture/). Every node runs [streamwright](https://docs.streamwright.net/)'s
 `streamwright run`.
 
 ## In one minute

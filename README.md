@@ -32,4 +32,4 @@ export STREAMWRIGHT_BIN=/tmp/streamwright-sdk-venv/bin/streamwright
 
 📖 Docs: [docs/](docs/index.md) — the [architecture](docs/architecture.md) (model, shared vocabulary, wrappers, execution
 mechanics, secrets) and [running](docs/running.md) (triggering, the Dagster UI, execution modes, environment). The
-StreamWright documentation: https://streamwright.net/docs/orchestration/
+StreamWright documentation: https://docs.streamwright.net/orchestration/
